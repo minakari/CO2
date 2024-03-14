@@ -213,3 +213,9 @@ for n in range(1800):
     Un.assign(U)
     Pn1.copy(p11)
     Pn2.copy(P22)
+
+s_a = (phic/J1)/(phi_w+(phic/J1))
+s_a = project ( s_a, V.sub(1).collapse())
+M5 = plot(s_a, title = '$Saturation_{CO2}$')
+plt.colorbar(M5)
+plt.show()
