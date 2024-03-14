@@ -10,14 +10,14 @@ from dolfin import *
 from mshr import *
 import numpy as np
 import matplotlib.pyplot as plt
-import pylab  
+import pylab
 import random
 
 
 # In[303]:
 
 
-mesh = RectangleMesh(Point(0, 0), Point(200, 100), 60, 30)  
+mesh = RectangleMesh(Point(0, 0), Point(200, 100), 60, 30)
 mesh_points=mesh.coordinates()
 
 mesh_points_x = mesh.coordinates()[:,0].T
@@ -34,7 +34,7 @@ for i in range (nn):
 
 E = 250000000
 nu = 0.3
-lmbda = Constant(E*nu/((1+nu)*(1-2*nu))) 
+lmbda = Constant(E*nu/((1+nu)*(1-2*nu)))
 mu = Constant(E/2/(1+nu))
 
 
@@ -45,9 +45,9 @@ d = 1 # interpolation degree
 Vue = VectorElement('CG', mesh.ufl_cell(), d) # displacement finite element
 Vp1e = FiniteElement('CG', mesh.ufl_cell(), d) # concentration finite element
 Vp2e = FiniteElement('CG', mesh.ufl_cell(), d) # concentration finite element
-Vp3e = FiniteElement('DG', mesh.ufl_cell(), 0) # concentration finite element
-Vp4e = FiniteElement('CG', mesh.ufl_cell(), d) # concentration finite element
-Vp5e = FiniteElement('DG', mesh.ufl_cell(), 1) # concentration finite element
+Vp3e = FiniteElement('DG', mesh.ufl_cell(), 0) # pressure finite element
+Vp4e = FiniteElement('CG', mesh.ufl_cell(), d) # volume fraction finite element
+Vp5e = FiniteElement('DG', mesh.ufl_cell(), d) # \psi finite element
 V = FunctionSpace(mesh, MixedElement([Vue, Vp1e, Vp2e, Vp3e, Vp4e, Vp5e]))
 
 # Boundary conditions
@@ -76,7 +76,7 @@ bcs = [bc1,bc5,bc10,bc12]
 # In[306]:
 
 
-# Defining multiple Neumann boundary conditions 
+# Defining multiple Neumann boundary conditions
 mf = MeshFunction("size_t", mesh, 1)
 mf.set_all(0) # initialize the function to zero
 
@@ -110,16 +110,16 @@ class left(SubDomain):
 left = left() # instantiate it
 left.mark(mf, 5)
 
-ds = ds(subdomain_data = mf) 
+ds = ds(subdomain_data = mf)
 
 
 # In[312]:
 
 
 U_ = TestFunction(V)
-(u_, P1_, P2_, p_, phic_,psi_) = split(U_)  
+(u_, P1_, P2_, p_, phic_,psi_) = split(U_)
 dU = TrialFunction(V)
-(du, dP1, dP2, dp, dphic, dpsi) = split(dU) 
+(du, dP1, dP2, dp, dphic, dpsi) = split(dU)
 U = Function(V)
 (u, P1, P2, p, phic, psi) = split(U)  # P1 = \rho_aR and P2 = \rho_wR
 
@@ -154,16 +154,16 @@ phi_w = (P2)/(J1*gamma_w)
 epsilon = 0.001
 gamma_a = np.abs(P1)/(np.abs(phic)+epsilon)
 
-Ic = tr((F + F.T)/2) 
+Ic = tr((F + F.T)/2)
 F1 = phi*(lmbda*Ic * I + mu*(F + F.T)) - (1-phi)*p*I
 
-g = Expression(("0.0", "-10.0"), degree=0) 
+g = Expression(("0.0", "-10.0"), degree=0)
 
 J_a = -(phic/J1)*(kappa/vis_a)*gamma_a*(R*T*grad(gamma_a)/(1-b*gamma_a) + b*R*T*gamma_a*grad(gamma_a)/(1-b*gamma_a)**2 - 2*a*gamma_a*grad(gamma_a) - 0.044*gamma_a*g -0.01*gamma_a*grad(psi)) # P_p1
 J_w = -phi_w*(kappa/vis_w)*gamma_w*(grad(p) - gamma_w*g) # P_p2
 
 #  Define time things.
-Tt, num_steps = 3600 , 1800   
+Tt, num_steps = 3600 , 1800
 dt = Tt / (1.0*num_steps)
 
 P_init2 = Expression ( "218.9", degree = 0 )
@@ -179,11 +179,11 @@ g_a = Expression(("-0.2"), degree=0)
 g_w = Expression(("0.0"), degree=0)
 
 mech_form = -inner(F1, grad(u_))*dx + (phi_w*gamma_w)*inner(g,u_)*dx + 0.044*(phic*gamma_a/J1)*inner(g,u_)*dx + (phi*2000)*inner(g,u_)*dx
-p_form1 = -J1*inner(((J_a) ), grad(P1_))*dx + ( P1 - Pn1 )/dt * P1_ * dx + J1*g_a*P1_*ds(4) + J1*g_w*P1_*ds(1) + J1*g_w*P1_*ds(2) 
+p_form1 = -J1*inner(((J_a) ), grad(P1_))*dx + ( P1 - Pn1 )/dt * P1_ * dx + J1*g_a*P1_*ds(4) + J1*g_w*P1_*ds(1) + J1*g_w*P1_*ds(2)
 p_form2 = -J1*inner(((J_w) ), grad(P2_))*dx + ( P2 - Pn2 )/dt * P2_ * dx + J1*g_w*P2_*ds(4) + J1*g_w*P2_*ds(1) + J1*g_w*P2_*ds(2)
 p_form3 = phic_*(phi*J1 + phic + phi_w*J1 - J1)*dx
 phi_form = p_*(p +pn -( gamma_a*R*T)/(1-b*gamma_a) + a*gamma_a**2 )*dx
-psi_form = -inner(grad(P1),grad(psi_))*dx - psi*psi_*dx 
+psi_form = -inner(grad(P1),grad(psi_))*dx - psi*psi_*dx
 
 F = mech_form + p_form1 + p_form2 + p_form3 + phi_form + psi_form
 J = derivative(F, U, dU)
@@ -208,8 +208,8 @@ prm['newton_solver']['relaxation_parameter'] = 1.0
 t = 0
 for n in range(1800):
     t += dt
-    solver.solve()        
+    solver.solve()
     (u1, P11, P22, p1, phic1, psi1) = U.split()
     Un.assign(U)
+    Pn1.copy(p11)
     Pn2.copy(P22)
-
